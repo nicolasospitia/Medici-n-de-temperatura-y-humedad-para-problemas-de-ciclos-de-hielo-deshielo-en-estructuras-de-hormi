@@ -1,0 +1,174 @@
+import processing.serial.*;
+
+PImage photoWarning;
+PImage photoTitulo;
+PImage photoTemperatura;
+PImage photoHumedad;
+int tamanox=50;
+int tamanoy=50;
+boolean problemaHielo = false;
+boolean problemaHumedad = false;
+boolean problemaTemperatura = false;
+//Inicializacion lista de temperaturas y humedades
+int numerosEnGrafica = 30;
+float[] arrayOfFloatsT = new float[numerosEnGrafica];
+float[] arrayOfFloatsH = new float[numerosEnGrafica];
+float humedadActual;
+float temperaturaActual;
+Serial lectura;
+
+void setup() {
+size(800,600);
+
+//inicializa lista de arduino
+lectura = new Serial (this, Serial.list()[1], 9600);
+
+//inicializa foto warning y titulo
+photoWarning = loadImage("warning.png");
+photoTitulo = loadImage("titulo hielo deshielo.png");
+photoTemperatura = loadImage("temperatura.png");
+photoHumedad = loadImage("humedad.png");
+}
+
+void draw() {
+  background(0,100,200);
+  
+  //leer arduino
+  String inString = lectura.readStringUntil('-');
+  if (inString != null){
+   String[] valor = split(inString,";");
+   temperaturaActual = float(valor[0]);
+   humedadActual = float(valor[1]);
+    
+  }
+  
+  //titulo
+fill(0,0,0);
+rect(40,40,400,60);
+image(photoTitulo,45,45,390,50);
+
+//temperatura
+fill(0,100,200);
+rect(40,140,200,50);
+image(photoTemperatura,42,142,196,46);
+fill(255,0,0);
+textSize(24);
+text(": "+temperaturaActual + " celsius",250,180);
+if(temperaturaActual < 5){
+  problemaTemperatura = true;
+}
+if(temperaturaActual >= 5){
+  problemaTemperatura = false;
+}
+
+  // agregar valores a las listas de temperatura y humedad
+  for (int i=0; i<arrayOfFloatsT.length-1; i++) {
+    arrayOfFloatsT[i] = arrayOfFloatsT[i+1];
+  }
+  for (int i=0; i<arrayOfFloatsH.length-1; i++) {
+    arrayOfFloatsH[i] = arrayOfFloatsH[i+1];
+  }
+  
+ //fondo gráfica
+fill(255,255,255);
+rect(40,210,300,200);
+
+  // agrega valores de humedad y temperatura con los de arduino
+  float newValueT = temperaturaActual;
+  float newValueH = humedadActual;
+  
+  // Modificacion en el tiempo de valores en lista
+  if(temperaturaActual<60){
+  arrayOfFloatsT[arrayOfFloatsT.length-1] = newValueT;
+  }
+  if(humedadActual<101){
+  arrayOfFloatsH[arrayOfFloatsH.length-1] = newValueH;
+  }
+
+  // graficador de valores de temperatura y humedad
+  for (int i=0; i<arrayOfFloatsT.length; i++) {
+    noStroke();
+    fill(255,0,0,255);
+    ellipse(300*i/arrayOfFloatsT.length+300/numerosEnGrafica/2+40,310-(arrayOfFloatsT[i]*5/2),300/numerosEnGrafica,200/numerosEnGrafica);
+    }
+for (int i=0; i<arrayOfFloatsH.length; i++) {
+    noStroke();
+    fill(0,0,255,255);
+    ellipse(300*i/arrayOfFloatsH.length+300/numerosEnGrafica/2+40,310-arrayOfFloatsH[i],300/numerosEnGrafica,200/numerosEnGrafica);
+    }
+      // ejes
+  for(int i=-4; i<4;i++) {
+  int j=310-(i*10)*5/2;
+  int k=i*10;
+  int h=i*25;
+  //temperatura
+  fill(255,0,0);
+  textSize(10);
+  text(""+k,30,j);
+  if(i==2){
+    stroke(0,0,255);
+  line(40,j,340,j);
+  }
+  if(i!=2){
+  stroke(0);
+  line(40,j,340,j);
+  }
+  //humedad
+  fill(0,0,255);
+  textSize(10);
+  text(""+h,342,j);
+  }
+  
+  stroke(255,0,0);
+  line(40,297.5,340,297.5);
+  
+  fill(255,0,0);
+  textSize(16);
+  text("Temperatura (Celsius)",32,210);
+  
+  fill(0,0,255);
+  textSize(16);
+  text("Humedad (%)",312,210);
+
+//humedad
+fill(0,100,200);
+rect(40,450,200,50);
+image(photoHumedad,42,452,196,46);
+fill(0,0,255);
+textSize(24);
+text(": "+humedadActual + "%",250,480);
+if(humedadActual >= 50){
+  problemaHumedad = true;
+}
+if(humedadActual < 50){
+  problemaHumedad = false;
+}
+
+// imagen problema temperatura y humedad
+if(problemaHumedad == true){
+  fill(255,0,0);
+  textSize(40);
+  text("!!!",40,485);
+}
+if(problemaTemperatura == true){
+  fill(255,0,0);
+  textSize(40);
+  text("!!!",40,180);
+}
+//Problema de hielo
+if(problemaTemperatura == true && problemaHumedad == true){
+  problemaHielo = true;
+}
+else{
+  problemaHielo = false;
+}
+
+
+
+//boolean warning cuando hay problema de hielo
+if(problemaHielo == true){
+image(photoWarning,550,200,200,300);
+
+}
+delay(1000);
+}
